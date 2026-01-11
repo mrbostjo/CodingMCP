@@ -61,6 +61,79 @@ dotnet build
 dotnet run
 ```
 
+## Using with Claude Desktop
+
+To use this MCP server with Claude Desktop, you need to configure it in Claude's configuration file.
+
+### Step 1: Build the Project
+
+First, build the project to generate the executable:
+
+```bash
+cd C:\MyProjects\CodingMCP
+dotnet build
+```
+
+### Step 2: Configure Claude Desktop
+
+Edit the Claude Desktop configuration file:
+
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+**Linux:** `~/.config/Claude/claude_desktop_config.json`
+
+### Step 3: Add CodingMCP Server
+
+Add the following configuration to the `mcpServers` section:
+
+```json
+{
+  "mcpServers": {
+    "coding-mcp": {
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "C:\\MyProjects\\CodingMCP\\CodingMCP.csproj"
+      ]
+    }
+  }
+}
+```
+
+Or, if you prefer to use the compiled executable:
+
+```json
+{
+  "mcpServers": {
+    "coding-mcp": {
+      "command": "C:\\MyProjects\\CodingMCP\\bin\\Debug\\net8.0\\CodingMCP.exe",
+      "args": []
+    }
+  }
+}
+```
+
+### Step 4: Restart Claude Desktop
+
+Restart Claude Desktop to load the new MCP server configuration.
+
+### Step 5: Verify Connection
+
+In Claude Desktop, you should see the CodingMCP tools available. Try asking:
+- "Can you build my .NET project?"
+- "Run this Python script for me"
+- "Compile my C++ project"
+
+### Troubleshooting
+
+- **Logs**: Check Claude Desktop logs for MCP connection issues
+- **Paths**: Ensure all paths in `config.json` are correct for your system
+- **Permissions**: Make sure the executable has proper permissions to run
+- **config.json**: Verify that `config.json` exists in the output directory (it should be copied automatically during build)
+
 ## Tools
 
 ### code_dotnet
