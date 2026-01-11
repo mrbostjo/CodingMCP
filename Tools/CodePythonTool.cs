@@ -28,16 +28,28 @@ public class CodePythonTool
 
         try
         {
-            var pythonPath = _settings.Tools.Python.FullPath;
+            var toolConfig = _settings.Tools.Python;
+            string executablePath;
             
-            if (!File.Exists(pythonPath))
+            // If path is empty, use just the executable name (assume it's in PATH)
+            if (string.IsNullOrWhiteSpace(toolConfig.Path))
             {
-                return $"Error: python executable not found at {pythonPath}. Please update config.json with the correct path.";
+                executablePath = toolConfig.ExecutableName;
+                _logger.LogInformation("Using executable from PATH: {Executable}", executablePath);
+            }
+            else
+            {
+                // Path is configured, use full path and verify it exists
+                executablePath = toolConfig.FullPath;
+                if (!File.Exists(executablePath))
+                {
+                    return $"Error: python executable not found at {executablePath}. Please update config.json with the correct path or leave path empty to use PATH.";
+                }
             }
 
             var startInfo = new ProcessStartInfo
             {
-                FileName = pythonPath,
+                FileName = executablePath,
                 Arguments = command,
                 WorkingDirectory = workingDirectory ?? Directory.GetCurrentDirectory(),
                 RedirectStandardOutput = true,
