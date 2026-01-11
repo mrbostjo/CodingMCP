@@ -9,14 +9,6 @@ A Model Context Protocol (MCP) server that provides tools for executing commands
 - **Code Python Tool**: Execute Python scripts and commands using the Python interpreter
 - **Code MSBuild Tool**: Build projects using MSBuild - supports Delphi (.dproj), C/C++ (.vcxproj), C# (.csproj), and other MSBuild-compatible projects
 
-## Architecture
-
-This server follows the same architectural patterns as MyMCP:
-- **Dependency Injection**: All tools are registered in the DI container
-- **Configuration**: Settings loaded from `config.json`
-- **Tool Organization**: Each tool is implemented in a separate file under the `Tools` directory
-- **MCP Integration**: Uses `ModelContextProtocol` NuGet package for MCP server functionality
-
 ## Configuration
 
 Edit `config.json` to configure the paths to your development tools:
