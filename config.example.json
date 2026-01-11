@@ -1,0 +1,25 @@
+{
+  "tools": {
+    "dotnet": {
+      "path": "C:\\Program Files\\dotnet",
+      "executableName": "dotnet.exe"
+    },
+    "rust": {
+      "path": "C:\\Users\\YourUser\\.cargo\\bin",
+      "executableName": "cargo.exe"
+    },
+    "python": {
+      "path": "C:\\Python312",
+      "executableName": "python.exe"
+    },
+    "msbuild": {
+      "path": "C:\\Program Files (x86)\\MSBuild\\Current\\Bin",
+      "executableName": "msbuild.exe"
+    }
+  },
+  "features": {
+    "enableLogging": true,
+    "defaultTimeout": 30,
+    "maxOutputSize": 10485760
+  }
+}
