@@ -28,11 +28,23 @@ public class CodeMSBuildTool
 
         try
         {
-            var msbuildPath = _settings.Tools.MSBuild.FullPath;
+            var toolConfig = _settings.Tools.MSBuild;
+            string executablePath;
             
-            if (!File.Exists(msbuildPath))
+            // If path is empty, use just the executable name (assume it's in PATH)
+            if (string.IsNullOrWhiteSpace(toolConfig.Path))
             {
-                return $"Error: MSBuild not found at {msbuildPath}. Please update config.json with the correct path.";
+                executablePath = toolConfig.ExecutableName;
+                _logger.LogInformation("Using executable from PATH: {Executable}", executablePath);
+            }
+            else
+            {
+                // Path is configured, use full path and verify it exists
+                executablePath = toolConfig.FullPath;
+                if (!File.Exists(executablePath))
+                {
+                    return $"Error: MSBuild not found at {executablePath}. Please update config.json with the correct path or leave path empty to use PATH.";
+                }
             }
 
             if (!File.Exists(projectPath))
@@ -49,7 +61,7 @@ public class CodeMSBuildTool
 
             var startInfo = new ProcessStartInfo
             {
-                FileName = msbuildPath,
+                FileName = executablePath,
                 Arguments = arguments.ToString(),
                 WorkingDirectory = Path.GetDirectoryName(projectPath) ?? Directory.GetCurrentDirectory(),
                 RedirectStandardOutput = true,
