@@ -12,6 +12,7 @@ public class ToolsSettings
     public ToolConfig Rust { get; set; } = new();
     public ToolConfig Python { get; set; } = new();
     public ToolConfig MSBuild { get; set; } = new();
+    public MSBuildDelphiToolConfig MSBuildDelphi { get; set; } = new();
 }
 
 public class ToolConfig
@@ -20,6 +21,11 @@ public class ToolConfig
     public string ExecutableName { get; set; } = string.Empty;
     
     public string FullPath => System.IO.Path.Combine(Path, ExecutableName);
+}
+
+public class MSBuildDelphiToolConfig : ToolConfig
+{
+    public System.Collections.Generic.List<string> DelphiInstallPaths { get; set; } = new();
 }
 
 public class FeaturesSettings
