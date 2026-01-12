@@ -29,6 +29,7 @@ builder.Services.AddSingleton<CodeRustTool>();
 builder.Services.AddSingleton<CodePythonTool>();
 builder.Services.AddSingleton<CodeMSBuildTool>();
 builder.Services.AddSingleton<CodeMSBuildDelphiTool>();
+builder.Services.AddSingleton<CodeDccDelphiTool>();
 
 // Configure MCP server with stdio transport and tool discovery
 builder.Services
