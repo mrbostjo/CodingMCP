@@ -16,10 +16,10 @@
             "path": "C:\\Program Files (x86)\\MSBuild\\Current\\Bin",
             "executableName": "msbuild.exe"
         },
-        "msbuilddelphi": {
+        "msBuildDelphi": {
             "path": "C:\\Program Files (x86)\\MSBuild\\Current\\Bin",
             "executableName": "msbuild.exe",
-            "delphi_install_paths": [
+            "delphiInstallPaths": [
                 "C:\\Program Files (x86)\\Embarcadero\\Studio\\22.0",
                 "C:\\Program Files (x86)\\Embarcadero\\Studio\\21.0"
             ]

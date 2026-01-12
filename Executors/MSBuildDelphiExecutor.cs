@@ -36,7 +36,7 @@ public class MSBuildDelphiExecutor : MSBuildExecutor
         }
         else
         {
-            Logger.LogInformation("No matching BDS path found in configuration for project {ProjectPath}", projectPath);
+            Logger.LogWarning("No Delphi installation found for project {ProjectPath} (version: {Version})", projectPath, _projectVersion ?? "unknown");
         }
 
         return await base.BuildProjectAsync(projectPath, buildOptions);
@@ -56,54 +56,26 @@ public class MSBuildDelphiExecutor : MSBuildExecutor
         {
             // Snapshot settings at resolution time
             var settings = SettingsMonitor.CurrentValue;
+            var configuredPaths = settings.Tools.MSBuildDelphi?.DelphiInstallPaths;
+
+            // Use smart path resolver with configured paths as priority
+            var resolvedPath = DelphiPathResolver.ResolveInstallPath(projectVersion, configuredPaths);
             
-            var candidates = settings.Tools.MSBuildDelphi?.DelphiInstallPaths;
-            if (candidates == null || candidates.Count == 0)
+            if (resolvedPath != null)
             {
-                Logger.LogDebug("No Delphi install paths configured under Tools.MSBuildDelphi.DelphiInstallPaths");
-                return null;
+                Logger.LogInformation("Resolved Delphi installation: {Path} for project version {Version}", 
+                    resolvedPath, projectVersion ?? "auto-detected");
+            }
+            else if (configuredPaths != null && configuredPaths.Count > 0)
+            {
+                Logger.LogWarning("No matching Delphi installation found in configured paths or standard locations");
+            }
+            else
+            {
+                Logger.LogWarning("No Delphi installation found in standard locations. Consider adding delphiInstallPaths to config.json");
             }
 
-            // Prefer exact match of version string in path
-            if (!string.IsNullOrWhiteSpace(projectVersion))
-            {
-                foreach (var candidate in candidates)
-                {
-                    try
-                    {
-                        if (string.IsNullOrWhiteSpace(candidate))
-                            continue;
-
-                        if (candidate.Contains(projectVersion, System.StringComparison.OrdinalIgnoreCase) && Directory.Exists(candidate))
-                        {
-                            return candidate;
-                        }
-
-                        // Also match by major version (e.g., '20' in '20.1')
-                        var major = projectVersion.Split('.').FirstOrDefault();
-                        if (!string.IsNullOrWhiteSpace(major) && candidate.Contains(major) && Directory.Exists(candidate))
-                        {
-                            return candidate;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.LogDebug(ex, "Error checking candidate Delphi install path: {Candidate}", candidate);
-                    }
-                }
-            }
-
-            // Fallback to first existing path
-            foreach (var candidate in candidates)
-            {
-                if (string.IsNullOrWhiteSpace(candidate))
-                    continue;
-
-                if (Directory.Exists(candidate))
-                    return candidate;
-            }
-
-            return null;
+            return resolvedPath;
         }
         catch (Exception ex)
         {

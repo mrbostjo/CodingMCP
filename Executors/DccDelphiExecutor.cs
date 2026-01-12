@@ -43,44 +43,80 @@ public class DccDelphiExecutor : CommandExecutor
         var settings = SettingsMonitor.CurrentValue;
         
         // Determine exe name based on architecture
-        var exeName = _architecture.Equals("Win64", System.StringComparison.OrdinalIgnoreCase) || _architecture.Equals("x64", System.StringComparison.OrdinalIgnoreCase)
+        var exeName = _architecture.Equals("Win64", System.StringComparison.OrdinalIgnoreCase) || 
+                      _architecture.Equals("x64", System.StringComparison.OrdinalIgnoreCase)
             ? "dcc64.exe"
             : "dcc32.exe";
 
-        // 1) Check configured Delphi install paths for bin\{exeName}
-        var delphiPaths = settings.Tools.MSBuildDelphi?.DelphiInstallPaths;
-        if (delphiPaths != null)
+        // Try to extract version from DPR's project file if it exists
+        string? projectVersion = null;
+        if (!string.IsNullOrWhiteSpace(_dprPath))
         {
-            foreach (var p in delphiPaths)
+            var dprojPath = Path.ChangeExtension(_dprPath, ".dproj");
+            if (File.Exists(dprojPath))
             {
-                if (string.IsNullOrWhiteSpace(p))
-                    continue;
-
-                try
-                {
-                    var candidate = Path.Combine(p, "bin", exeName);
-                    if (File.Exists(candidate))
-                        return candidate;
-
-                    // sometimes the bin folder is under 'bin\x86' or similar; try searching common variants
-                    var candidate2 = Path.Combine(p, "bin", "win32", exeName);
-                    if (File.Exists(candidate2))
-                        return candidate2;
-                }
-                catch { /* ignore malformed paths */ }
+                projectVersion = ExtractProjectVersion(dprojPath);
             }
         }
 
-        // 2) Check configured tool path (ToolConfig.Path) like other tools
+        // Use smart path resolver
+        var configuredPaths = settings.Tools.MSBuildDelphi?.DelphiInstallPaths;
+        var installPath = DelphiPathResolver.ResolveInstallPath(projectVersion, configuredPaths);
+
+        if (installPath != null)
+        {
+            // Try standard bin location
+            var candidate = Path.Combine(installPath, "bin", exeName);
+            if (File.Exists(candidate))
+            {
+                Logger.LogInformation("Found {ExeName} at: {Path}", exeName, candidate);
+                return candidate;
+            }
+
+            // Try alternate location (some versions have different structure)
+            var candidate2 = Path.Combine(installPath, "bin", "win32", exeName);
+            if (File.Exists(candidate2))
+            {
+                Logger.LogInformation("Found {ExeName} at: {Path}", exeName, candidate2);
+                return candidate2;
+            }
+        }
+
+        // Fallback: check if configured tool path has the exe
         if (!string.IsNullOrWhiteSpace(toolConfig.Path))
         {
             var candidate = Path.Combine(toolConfig.Path, exeName);
             if (File.Exists(candidate))
+            {
+                Logger.LogInformation("Found {ExeName} at configured path: {Path}", exeName, candidate);
                 return candidate;
+            }
         }
 
-        // 3) Fallback to exe name (require it to be on PATH)
+        // Last resort: try PATH
+        Logger.LogInformation("Attempting to use {ExeName} from system PATH", exeName);
         return exeName;
+    }
+
+    private string? ExtractProjectVersion(string dprojPath)
+    {
+        try
+        {
+            var doc = System.Xml.Linq.XDocument.Load(dprojPath);
+            var projectElement = doc.Root;
+            if (projectElement == null) return null;
+
+            var ns = projectElement.Name.NamespaceName;
+            var propertyGroup = projectElement.Elements(System.Xml.Linq.XName.Get("PropertyGroup", ns)).FirstOrDefault();
+            if (propertyGroup == null) return null;
+
+            var versionElement = propertyGroup.Element(System.Xml.Linq.XName.Get("ProjectVersion", ns));
+            return versionElement?.Value;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     protected override Task<string?> PreExecuteAsync(
