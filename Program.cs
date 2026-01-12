@@ -8,14 +8,15 @@ using CodingMCP.Tools;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-// Load configuration from config.json
-var configLoader = new ConfigurationLoader(
-    Path.Combine(AppContext.BaseDirectory, "config.json"));
-var codingSettings = configLoader.LoadConfiguration();
+// Configure CodingSettings from config.json with hot-reload support
+builder.Configuration.AddJsonFile(
+    Path.Combine(AppContext.BaseDirectory, "config.json"),
+    optional: false,
+    reloadOnChange: true);
 
-// Register configuration loader and settings
-builder.Services.AddSingleton<IConfigurationLoader>(configLoader);
-builder.Services.AddSingleton(codingSettings);
+// Register CodingSettings with IOptionsMonitor for hot-reload
+builder.Services.Configure<CodingSettings>(
+    builder.Configuration);
 
 // Configure logging to stderr for MCP compatibility
 builder.Logging.AddConsole(consoleLogOptions =>

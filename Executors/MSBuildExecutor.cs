@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Text;
 using CodingMCP.Configuration;
 
@@ -8,8 +9,8 @@ public class MSBuildExecutor : CommandExecutor
 {
     private string? _projectPath;
 
-    public MSBuildExecutor(ILogger<MSBuildExecutor> logger, CodingSettings settings)
-        : base(logger, settings, settings.Tools.MSBuild)
+    public MSBuildExecutor(ILogger<MSBuildExecutor> logger, IOptionsMonitor<CodingSettings> settingsMonitor)
+        : base(logger, settingsMonitor, () => settingsMonitor.CurrentValue.Tools.MSBuild)
     {
     }
 
@@ -36,7 +37,11 @@ public class MSBuildExecutor : CommandExecutor
         return await ExecuteAsync(command.ToString(), workingDirectory);
     }
 
-    protected override async Task<string?> PreExecuteAsync(string command, string? workingDirectory)
+    protected override async Task<string?> PreExecuteAsync(
+        string command, 
+        string? workingDirectory,
+        CodingSettings settings,
+        ToolConfig toolConfig)
     {
         // Validate project file exists
         if (_projectPath != null && !File.Exists(_projectPath))
@@ -44,6 +49,6 @@ public class MSBuildExecutor : CommandExecutor
             return $"Project file not found at {_projectPath}";
         }
         
-        return await base.PreExecuteAsync(command, workingDirectory);
+        return await base.PreExecuteAsync(command, workingDirectory, settings, toolConfig);
     }
 }

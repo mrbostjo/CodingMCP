@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
 using CodingMCP.Configuration;
@@ -11,9 +12,9 @@ public class CodeMSBuildDelphiTool
 {
     private readonly MSBuildDelphiExecutor _executor;
 
-    public CodeMSBuildDelphiTool(ILogger<CodeMSBuildDelphiTool> logger, ILoggerFactory loggerFactory, CodingSettings settings)
+    public CodeMSBuildDelphiTool(ILogger<CodeMSBuildDelphiTool> logger, ILoggerFactory loggerFactory, IOptionsMonitor<CodingSettings> settingsMonitor)
     {
-        _executor = new MSBuildDelphiExecutor(loggerFactory.CreateLogger<MSBuildDelphiExecutor>(), settings);
+        _executor = new MSBuildDelphiExecutor(loggerFactory.CreateLogger<MSBuildDelphiExecutor>(), settingsMonitor);
     }
 
     [McpServerTool, Description("Build Delphi projects using MSBuild. Supports .dproj files.")]

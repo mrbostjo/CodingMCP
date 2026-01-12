@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
 using CodingMCP.Configuration;
@@ -11,9 +12,9 @@ public class CodeMSBuildTool
 {
     private readonly MSBuildExecutor _executor;
 
-    public CodeMSBuildTool(ILogger<CodeMSBuildTool> logger, ILoggerFactory loggerFactory, CodingSettings settings)
+    public CodeMSBuildTool(ILogger<CodeMSBuildTool> logger, ILoggerFactory loggerFactory, IOptionsMonitor<CodingSettings> settingsMonitor)
     {
-        _executor = new MSBuildExecutor(loggerFactory.CreateLogger<MSBuildExecutor>(), settings);
+        _executor = new MSBuildExecutor(loggerFactory.CreateLogger<MSBuildExecutor>(), settingsMonitor);
     }
 
     [McpServerTool, Description("Build projects using MSBuild. Supports Delphi (.dproj), C++ (.vcxproj), C# (.csproj), and other MSBuild-compatible projects. For Delphi: use .dproj files. For C/C++: use .vcxproj files from Visual Studio projects.")]

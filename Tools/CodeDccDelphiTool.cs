@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
 using CodingMCP.Configuration;
@@ -11,9 +12,9 @@ public class CodeDccDelphiTool
 {
     private readonly DccDelphiExecutor _executor;
 
-    public CodeDccDelphiTool(ILogger<CodeDccDelphiTool> logger, ILoggerFactory loggerFactory, CodingSettings settings)
+    public CodeDccDelphiTool(ILogger<CodeDccDelphiTool> logger, ILoggerFactory loggerFactory, IOptionsMonitor<CodingSettings> settingsMonitor)
     {
-        _executor = new DccDelphiExecutor(loggerFactory.CreateLogger<DccDelphiExecutor>(), settings);
+        _executor = new DccDelphiExecutor(loggerFactory.CreateLogger<DccDelphiExecutor>(), settingsMonitor);
     }
 
     [McpServerTool, Description("Compile Delphi .dpr project using dcc32/dcc64")]

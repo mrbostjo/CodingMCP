@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -11,8 +12,8 @@ public class DccDelphiExecutor : CommandExecutor
     private string? _dprPath;
     private string _architecture = "Win32";
 
-    public DccDelphiExecutor(ILogger<DccDelphiExecutor> logger, CodingSettings settings)
-        : base(logger, settings, settings.Tools.MSBuildDelphi)
+    public DccDelphiExecutor(ILogger<DccDelphiExecutor> logger, IOptionsMonitor<CodingSettings> settingsMonitor)
+        : base(logger, settingsMonitor, () => settingsMonitor.CurrentValue.Tools.MSBuildDelphi)
     {
     }
 
@@ -36,15 +37,18 @@ public class DccDelphiExecutor : CommandExecutor
         return await ExecuteAsync(command.ToString(), workingDirectory);
     }
 
-    protected override string? GetExecutablePath()
+    protected override string? GetExecutablePath(ToolConfig toolConfig)
     {
+        // Snapshot settings at execution time
+        var settings = SettingsMonitor.CurrentValue;
+        
         // Determine exe name based on architecture
         var exeName = _architecture.Equals("Win64", System.StringComparison.OrdinalIgnoreCase) || _architecture.Equals("x64", System.StringComparison.OrdinalIgnoreCase)
             ? "dcc64.exe"
             : "dcc32.exe";
 
         // 1) Check configured Delphi install paths for bin\{exeName}
-        var delphiPaths = Settings.Tools.MSBuildDelphi?.DelphiInstallPaths;
+        var delphiPaths = settings.Tools.MSBuildDelphi?.DelphiInstallPaths;
         if (delphiPaths != null)
         {
             foreach (var p in delphiPaths)
@@ -68,9 +72,9 @@ public class DccDelphiExecutor : CommandExecutor
         }
 
         // 2) Check configured tool path (ToolConfig.Path) like other tools
-        if (!string.IsNullOrWhiteSpace(ToolConfig.Path))
+        if (!string.IsNullOrWhiteSpace(toolConfig.Path))
         {
-            var candidate = Path.Combine(ToolConfig.Path, exeName);
+            var candidate = Path.Combine(toolConfig.Path, exeName);
             if (File.Exists(candidate))
                 return candidate;
         }
@@ -79,13 +83,17 @@ public class DccDelphiExecutor : CommandExecutor
         return exeName;
     }
 
-    protected override Task<string?> PreExecuteAsync(string command, string? workingDirectory)
+    protected override Task<string?> PreExecuteAsync(
+        string command, 
+        string? workingDirectory,
+        CodingSettings settings,
+        ToolConfig toolConfig)
     {
         if (string.IsNullOrWhiteSpace(_dprPath) || !File.Exists(_dprPath))
         {
             return Task.FromResult<string?>("DPR file not found or path not provided.");
         }
 
-        return base.PreExecuteAsync(command, workingDirectory);
+        return base.PreExecuteAsync(command, workingDirectory, settings, toolConfig);
     }
 }

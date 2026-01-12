@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Diagnostics;
 using System.Xml.Linq;
 using System.IO;
@@ -13,8 +14,8 @@ public class MSBuildDelphiExecutor : MSBuildExecutor
     private string? _bdsPath;
     private string? _projectVersion;
 
-    public MSBuildDelphiExecutor(ILogger<MSBuildDelphiExecutor> logger, CodingSettings settings)
-        : base(logger, settings)
+    public MSBuildDelphiExecutor(ILogger<MSBuildDelphiExecutor> logger, IOptionsMonitor<CodingSettings> settingsMonitor)
+        : base(logger, settingsMonitor)
     {
     }
 
@@ -53,7 +54,10 @@ public class MSBuildDelphiExecutor : MSBuildExecutor
     {
         try
         {
-            var candidates = Settings.Tools.MSBuildDelphi?.DelphiInstallPaths;
+            // Snapshot settings at resolution time
+            var settings = SettingsMonitor.CurrentValue;
+            
+            var candidates = settings.Tools.MSBuildDelphi?.DelphiInstallPaths;
             if (candidates == null || candidates.Count == 0)
             {
                 Logger.LogDebug("No Delphi install paths configured under Tools.MSBuildDelphi.DelphiInstallPaths");

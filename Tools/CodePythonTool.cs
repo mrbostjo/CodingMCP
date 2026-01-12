@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
 using CodingMCP.Configuration;
@@ -11,9 +12,9 @@ public class CodePythonTool
 {
     private readonly PythonExecutor _executor;
 
-    public CodePythonTool(ILogger<CodePythonTool> logger, ILoggerFactory loggerFactory, CodingSettings settings)
+    public CodePythonTool(ILogger<CodePythonTool> logger, ILoggerFactory loggerFactory, IOptionsMonitor<CodingSettings> settingsMonitor)
     {
-        _executor = new PythonExecutor(loggerFactory.CreateLogger<PythonExecutor>(), settings);
+        _executor = new PythonExecutor(loggerFactory.CreateLogger<PythonExecutor>(), settingsMonitor);
     }
 
     [McpServerTool, Description("Execute Python scripts or commands using the Python interpreter")]

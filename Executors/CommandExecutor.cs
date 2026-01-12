@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Diagnostics;
 using System.Text;
 using CodingMCP.Configuration;
@@ -8,14 +9,17 @@ namespace CodingMCP.Executors;
 public abstract class CommandExecutor
 {
     protected readonly ILogger Logger;
-    protected readonly CodingSettings Settings;
-    protected readonly ToolConfig ToolConfig;
+    protected readonly IOptionsMonitor<CodingSettings> SettingsMonitor;
+    protected readonly Func<ToolConfig> GetToolConfig;
 
-    protected CommandExecutor(ILogger logger, CodingSettings settings, ToolConfig toolConfig)
+    protected CommandExecutor(
+        ILogger logger, 
+        IOptionsMonitor<CodingSettings> settingsMonitor,
+        Func<ToolConfig> getToolConfig)
     {
         Logger = logger;
-        Settings = settings;
-        ToolConfig = toolConfig;
+        SettingsMonitor = settingsMonitor;
+        GetToolConfig = getToolConfig;
     }
 
     /// <summary>
@@ -23,24 +27,28 @@ public abstract class CommandExecutor
     /// </summary>
     public async Task<ExecutionResult> ExecuteAsync(string command, string? workingDirectory = null)
     {
+        // Snapshot current configuration at start of execution
+        var settings = SettingsMonitor.CurrentValue;
+        var toolConfig = GetToolConfig();
+        
         var toolName = GetToolName();
         Logger.LogInformation("Executing {ToolName} command: {Command}", toolName, command);
 
         try
         {
             // Get the executable path
-            var executablePath = GetExecutablePath();
+            var executablePath = GetExecutablePath(toolConfig);
             if (executablePath == null)
             {
                 return new ExecutionResult
                 {
-                    ErrorMessage = $"{toolName} executable not found at {ToolConfig.FullPath}. " +
+                    ErrorMessage = $"{toolName} executable not found at {toolConfig.FullPath}. " +
                                    "Please update config.json with the correct path or leave path empty to use PATH."
                 };
             }
 
             // Allow derived classes to perform pre-execution setup
-            var preExecuteResult = await PreExecuteAsync(command, workingDirectory);
+            var preExecuteResult = await PreExecuteAsync(command, workingDirectory, settings, toolConfig);
             if (!string.IsNullOrWhiteSpace(preExecuteResult))
             {
                 return new ExecutionResult { ErrorMessage = preExecuteResult };
@@ -60,7 +68,7 @@ public abstract class CommandExecutor
             ModifyProcessStartInfo(startInfo);
 
             // Execute the process
-            var result = await ExecuteProcessAsync(startInfo);
+            var result = await ExecuteProcessAsync(startInfo, settings);
 
             // Allow derived classes to perform post-execution cleanup/processing
             await PostExecuteAsync(result);
@@ -77,16 +85,16 @@ public abstract class CommandExecutor
     /// <summary>
     /// Get the executable path, handling both PATH and explicit path configurations
     /// </summary>
-    protected virtual string? GetExecutablePath()
+    protected virtual string? GetExecutablePath(ToolConfig toolConfig)
     {
-        if (string.IsNullOrWhiteSpace(ToolConfig.Path))
+        if (string.IsNullOrWhiteSpace(toolConfig.Path))
         {
-            var executableName = ToolConfig.ExecutableName;
+            var executableName = toolConfig.ExecutableName;
             Logger.LogInformation("Using executable from PATH: {Executable}", executableName);
             return executableName;
         }
         
-        var fullPath = ToolConfig.FullPath;
+        var fullPath = toolConfig.FullPath;
         if (!File.Exists(fullPath))
         {
             return null;
@@ -115,7 +123,7 @@ public abstract class CommandExecutor
     /// <summary>
     /// Execute the process and capture output
     /// </summary>
-    protected virtual async Task<ExecutionResult> ExecuteProcessAsync(ProcessStartInfo startInfo)
+    protected virtual async Task<ExecutionResult> ExecuteProcessAsync(ProcessStartInfo startInfo, CodingSettings settings)
     {
         using var process = new Process { StartInfo = startInfo };
         var outputBuilder = new StringBuilder();
@@ -141,7 +149,7 @@ public abstract class CommandExecutor
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
-        var timeout = TimeSpan.FromSeconds(Settings.Features.DefaultTimeout);
+        var timeout = TimeSpan.FromSeconds(settings.Features.DefaultTimeout);
         var completed = process.WaitForExit((int)timeout.TotalMilliseconds);
 
         if (!completed)
@@ -179,7 +187,11 @@ public abstract class CommandExecutor
     /// <summary>
     /// Called before execution. Return error message to abort, or null/empty to continue.
     /// </summary>
-    protected virtual Task<string?> PreExecuteAsync(string command, string? workingDirectory)
+    protected virtual Task<string?> PreExecuteAsync(
+        string command, 
+        string? workingDirectory,
+        CodingSettings settings,
+        ToolConfig toolConfig)
     {
         return Task.FromResult<string?>(null);
     }

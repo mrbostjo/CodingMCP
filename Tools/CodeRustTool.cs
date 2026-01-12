@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
 using CodingMCP.Configuration;
@@ -11,9 +12,9 @@ public class CodeRustTool
 {
     private readonly CargoExecutor _executor;
 
-    public CodeRustTool(ILogger<CodeRustTool> logger, ILoggerFactory loggerFactory, CodingSettings settings)
+    public CodeRustTool(ILogger<CodeRustTool> logger, ILoggerFactory loggerFactory, IOptionsMonitor<CodingSettings> settingsMonitor)
     {
-        _executor = new CargoExecutor(loggerFactory.CreateLogger<CargoExecutor>(), settings);
+        _executor = new CargoExecutor(loggerFactory.CreateLogger<CargoExecutor>(), settingsMonitor);
     }
 
     [McpServerTool, Description("Execute Rust cargo commands for building, running, or managing Rust projects")]

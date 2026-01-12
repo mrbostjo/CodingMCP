@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
 using CodingMCP.Configuration;
@@ -11,9 +12,9 @@ public class CodeDotnetTool
 {
     private readonly DotnetExecutor _executor;
 
-    public CodeDotnetTool(ILogger<CodeDotnetTool> logger, ILoggerFactory loggerFactory, CodingSettings settings)
+    public CodeDotnetTool(ILogger<CodeDotnetTool> logger, ILoggerFactory loggerFactory, IOptionsMonitor<CodingSettings> settingsMonitor)
     {
-        _executor = new DotnetExecutor(loggerFactory.CreateLogger<DotnetExecutor>(), settings);
+        _executor = new DotnetExecutor(loggerFactory.CreateLogger<DotnetExecutor>(), settingsMonitor);
     }
 
     [McpServerTool, Description("Execute .NET CLI commands for building, running, or managing .NET projects")]
